@@ -12,7 +12,7 @@ COPY *.xml ./
 RUN VERSION=${VERSION} mvn package
 
 # release
-FROM openjdk:16-jdk-alpine
+FROM eclipse-temurin:16-alpine
 ARG VERSION=${VERSION}
 WORKDIR /app
 # создаём пользователя jaruser
