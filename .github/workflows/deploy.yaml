@@ -78,7 +78,8 @@ jobs:
         run: helm package ./sausage-store-chart
       - name: Publish Helm Chart to Nexus
         run: |
-          curl -u $NEXUS_HELM_REPO_USER:$NEXUS_HELM_REPO_PASSWORD \
+          curl --fail-with-body --show-error \
+            -u $NEXUS_HELM_REPO_USER:$NEXUS_HELM_REPO_PASSWORD \
             --upload-file ./sausage-store-0.1.0.tgz \
             "$NEXUS_HELM_REPO/sausage-store-0.1.0.tgz"
 
