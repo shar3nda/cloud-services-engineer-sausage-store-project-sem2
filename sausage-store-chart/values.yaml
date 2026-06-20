@@ -15,18 +15,19 @@ frontend:
   service:
     port: 80
   ingress:
-    host: YOUR_STUDENT_HOSTNAME.students-projects.ru # Корректный домен будет указан в задании
+    host: front-ikrupnov.sem2.students-projects.ru # Корректный домен будет указан в задании
     path: /
     pathType: Prefix
+    secretName: 2sem-students-projects-wildcard-secret
   containerPort: 80
-  image: YOUR_DOCKERHUB/sausage-frontend:latest
+  image: johannkrupp/sausage-frontend:latest
   resources:
     requests:
       memory: "128Mi"
       cpu: "100m"
     limits:
       memory: "128Mi"
-      cpu: "1"
+      cpu: "500m"
   nginxConf: nginx.conf
 
 backend:
@@ -45,8 +46,8 @@ backend:
   revisionHistoryLimit: 15
   replicas: 1
   strategy:
-  ### Опишите стратегию RollingUpdate для бэкенда
-  image: YOUR_DOCKERHUB/sausage-backend:latest
+    type: RollingUpdate
+  image: johannkrupp/sausage-backend:latest
   imagePullPolicy: Always
   resources:
     requests:
@@ -57,20 +58,68 @@ backend:
       cpu: "1"
   containerPort: 8080
   livenessProbe:
-  ### Опишите LivenessProbe для бэкенда
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 15
   vpa:
-  ### Опишите VPA для бэкенда
+    updatePolicy:
+      updateMode: "Off"
+    resourcePolicy:
+      containerPolicies:
+        - containerName: "*"
+          minAllowed:
+            cpu: "100m"
+            memory: "256Mi"
+          maxAllowed:
+            cpu: "1"
+            memory: "1Gi"
 
-backend-report:
 ### Опишите значения для backend-report
 ### Приложение должно использовать стратегию Recreate
 ### Приложение использует переменную PORT - порт, на котором оно запустится и DB - Uri-подключение к mongodb. 
 ### DB положите в Secret, PORT в ConfigMap
 ### Опишите HPA для backend-report
+backend-report:
+  annotations:
+    path: /actuator/prometheus
+    port: "8080"
+    scrape: "true"
+  service:
+    port: 8080
+  revisionHistoryLimit: 15
+  replicas: 1
+  strategy:
+    type: Recreate
+  image: johannkrupp/sausage-backend-report:latest
+  imagePullPolicy: Always
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  containerPort: 8080
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 15
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 50
+
 
 infra:
   postgresql:
-  ### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
+    db: sausage-store
+    user: store
+    password: storepassword
+    containerPort: 5432
   mongodb:
     env:
       MONGO_INITDB_ROOT_USERNAME: root

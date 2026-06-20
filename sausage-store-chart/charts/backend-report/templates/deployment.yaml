@@ -34,31 +34,16 @@ spec:
           image: {{ .Values.image }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
-            - name: SPRING_DATASOURCE_URL
+            - name: PORT
               valueFrom:
                 configMapKeyRef:
                   name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
-                  key: postgres_uri
-            - name: SPRING_DATASOURCE_USERNAME
+                  key: port
+            - name: DB
               valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
-                  key: postgres_user
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
-                  key: postgres_password
-            - name: REPORT_PATH
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
-                  key: report_path
-            - name: LOG_PATH
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
-                  key: log_path
+                secretKeyRef:
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-secret
+                  key: db
           resources:
 {{ toYaml .Values.resources | indent 12 }} 
           ports:
@@ -67,16 +52,16 @@ spec:
           livenessProbe:
 {{ toYaml .Values.livenessProbe | indent 12 }} 
 ---
-apiVersion: autoscaling/v2
-kind: VerticalPodAutoscaler
+apiVersion: autoscaling.k8s.io/v1
+kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ .Release.Name }}-{{ .Chart.Name }}-vpa
+  name: {{ .Release.Name }}-{{ .Chart.Name }}-hpa
+  namespace: {{ .Release.Namespace }}
 spec:
-  targetRef:
-    apiVersion: "apps/v1"
+  scaleTargetRef:
+    apiVersion: apps/v1
     kind: Deployment
     name: {{ .Release.Name }}-{{ .Chart.Name }}
-  updatePolicy:
-{{ toYaml .Values.vpa.updatePolicy | indent 4 }} 
-  resourcePolicy:
-{{ toYaml .Values.vpa.resourcePolicy | indent 4 }} 
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.hpa.targetCPUUtilizationPercentage }}
