@@ -10,7 +10,7 @@ RUN npm run build
 FROM nginx:1.31-alpine3.23-slim
 WORKDIR /app
 
-COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
+COPY --from=builder --chown=nginx:nginx /app/dist/frontend /usr/share/nginx/html
 
 EXPOSE 80
 
