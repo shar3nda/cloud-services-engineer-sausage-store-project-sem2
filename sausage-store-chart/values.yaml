@@ -111,7 +111,7 @@ backend-report:
   hpa:
     minReplicas: 1
     maxReplicas: 3
-    targetCPUUtilizationPercentage: 50
+    averageUtilization: 50
 
 
 infra:
